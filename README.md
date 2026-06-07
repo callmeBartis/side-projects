@@ -2,21 +2,21 @@
 
 [![Build & Publish](https://github.com/callmeBartis/side-projects/actions/workflows/build.yml/badge.svg)](https://github.com/callmeBartis/side-projects/actions/workflows/build.yml)
 
-Eine Sammlung kleiner, eigenständiger Side-Projects. Jedes Projekt liegt in
-seinem eigenen Ordner, bringt ein eigenes `Dockerfile` mit und wird von der CI
-automatisch gebaut und als Docker-Image veröffentlicht.
+A collection of small, self-contained side projects. Each project lives in its
+own folder, ships with its own `Dockerfile`, and is automatically built and
+published as a Docker image by CI.
 
-> **Komplett kostenlos & kommerziell nutzbar.** Alles in diesem Repository darf
-> ohne Einschränkung verwendet werden — privat, kommerziell, verändert oder
-> weiterverteilt. Keine Lizenzgebühren, keine Namensnennungspflicht. Nutzung auf
-> eigenes Risiko, ohne Gewährleistung.
+> **Completely free & commercially usable.** Everything in this repository may
+> be used without restriction — privately, commercially, modified, or
+> redistributed. No license fees, no attribution required. Use at your own risk,
+> without warranty.
 
-## Inhaltsverzeichnis
+## Table of contents
 
-- [GeoBingo](#geobingo) — Echtzeit-Multiplayer „Finde es in Street View"
-- [Allgemeines](#allgemeines)
-  - [Wie die CI funktioniert](#wie-die-ci-funktioniert)
-  - [Neues Projekt hinzufügen](#neues-projekt-hinzufügen)
+- [GeoBingo](#geobingo) — real-time multiplayer "find it in Street View"
+- [General](#general)
+  - [How CI works](#how-ci-works)
+  - [Adding a new project](#adding-a-new-project)
 
 ---
 
@@ -24,55 +24,53 @@ automatisch gebaut und als Docker-Image veröffentlicht.
 
 📁 [`geobingo/`](./geobingo) · 🐳 `ghcr.io/callmebartis/geobingo`
 
-Ein Echtzeit-Multiplayer-Spiel: Der Host schreibt eine Liste von Begriffen
-(z. B. *„rote Tür, Graffiti, ein Hund, ein Brunnen"*), teilt einen Raum-Link,
-und alle suchen die Begriffe irgendwo auf Google Street View. Am Ende stimmen
-die Spieler über die Funde ab und es gibt eine Rangliste.
+A real-time multiplayer game: the host writes a list of things to find
+(e.g. *"red door, graffiti, a dog, a fountain"*), shares a room link, and
+everyone races to locate each term anywhere on Google Street View. When the
+round ends, players vote on each other's finds and a ranking is shown.
 
-**Stack:** Go-Backend (API + Echtzeit über SSE, SQLite) das ein statisch
-exportiertes Next.js-Frontend einbettet → **ein einziges, eigenständiges Binary
-bzw. Docker-Image**. Einzige externe Abhängigkeit zur Laufzeit: ein Google-Maps-
-API-Key.
+**Stack:** a Go backend (API + real-time updates over SSE, SQLite) that embeds a
+statically exported Next.js frontend → **a single, self-contained binary /
+Docker image**. The only runtime dependency is a Google Maps API key.
 
-### Voraussetzungen: Google-Maps-API-Key
+### Prerequisite: Google Maps API key
 
-GeoBingo nutzt Google Street View und braucht daher einen API-Key. So bekommst du
-einen (kostenloses Google-Kontingent ist für privates Spielen i. d. R. mehr als
-ausreichend):
+GeoBingo uses Google Street View and therefore needs an API key. Here's how to
+get one (Google's free tier is usually more than enough for casual play):
 
-1. [Google Cloud Console](https://console.cloud.google.com/) öffnen und ein
-   Projekt anlegen (oder ein bestehendes wählen).
-2. **Abrechnung aktivieren** (Billing) — Google verlangt eine Zahlungsmethode,
-   auch wenn du im Free-Tier bleibst.
-3. Unter **APIs & Dienste → Bibliothek** diese beiden APIs aktivieren:
+1. Open the [Google Cloud Console](https://console.cloud.google.com/) and create
+   a project (or pick an existing one).
+2. **Enable billing** — Google requires a payment method even if you stay within
+   the free tier.
+3. Under **APIs & Services → Library**, enable both of these APIs:
    - **Maps JavaScript API**
    - **Geocoding API**
-4. Unter **APIs & Dienste → Anmeldedaten → Anmeldedaten erstellen → API-Schlüssel**
-   einen Key erzeugen.
-5. **Key absichern** (wichtig, da der Key im Browser sichtbar ist):
-   - *Anwendungseinschränkungen* → **HTTP-Referrer** → deine Domain(s)
-     eintragen (z. B. `http://localhost:10200/*` und/oder `https://deine-domain.tld/*`).
-   - *API-Einschränkungen* → auf die beiden oben genannten APIs begrenzen.
-6. Den Key als Umgebungsvariable `MAPS_API_KEY` setzen (siehe unten).
+4. Under **APIs & Services → Credentials → Create credentials → API key**,
+   create a key.
+5. **Lock the key down** (important, since the key is exposed in the browser):
+   - *Application restrictions* → **HTTP referrers** → add your domain(s)
+     (e.g. `http://localhost:10200/*` and/or `https://your-domain.tld/*`).
+   - *API restrictions* → limit it to the two APIs listed above.
+6. Set the key as the `MAPS_API_KEY` environment variable (see below).
 
-### Setup mit `docker run`
+### Setup with `docker run`
 
 ```bash
 docker run -d --name geobingo \
   -p 10200:10200 \
-  -e MAPS_API_KEY=dein_google_maps_key \
+  -e MAPS_API_KEY=your_google_maps_key \
   -v geobingo-data:/data \
   ghcr.io/callmebartis/geobingo:latest
 ```
 
-Danach im Browser **http://localhost:10200** öffnen.
+Then open **http://localhost:10200** in your browser.
 
-- `-v geobingo-data:/data` macht die SQLite-DB (Räume) über Neustarts hinweg
-  persistent. Ohne Volume ist alles flüchtig — für ein Spiel zwischendurch völlig okay.
-- `-p 10200:10200` mappt den Port; der Container-Port lässt sich über
-  `-e PORT=...` ändern.
+- `-v geobingo-data:/data` keeps the SQLite database (rooms) across restarts.
+  Without a volume everything is ephemeral — perfectly fine for a quick game.
+- `-p 10200:10200` maps the port; the container port can be changed via
+  `-e PORT=...`.
 
-### Setup mit Docker Compose
+### Setup with Docker Compose
 
 `docker-compose.yml`:
 
@@ -80,12 +78,12 @@ Danach im Browser **http://localhost:10200** öffnen.
 services:
   geobingo:
     image: ghcr.io/callmebartis/geobingo:latest
-    # Alternativ lokal aus dem Quellcode bauen statt das Image zu ziehen:
+    # Alternatively build from source instead of pulling the image:
     # build: ./geobingo
     ports:
       - "10200:10200"
     environment:
-      MAPS_API_KEY: ${MAPS_API_KEY}   # aus deiner .env oder Shell
+      MAPS_API_KEY: ${MAPS_API_KEY}   # from your .env or shell
       PORT: "10200"
     volumes:
       - geobingo-data:/data
@@ -95,52 +93,51 @@ volumes:
   geobingo-data:
 ```
 
-Starten:
+Start it:
 
 ```bash
-export MAPS_API_KEY=dein_google_maps_key   # Windows PowerShell: $env:MAPS_API_KEY="..."
+export MAPS_API_KEY=your_google_maps_key   # Windows PowerShell: $env:MAPS_API_KEY="..."
 docker compose up -d
 ```
 
-### Selbst bauen (ohne Registry)
+### Build it yourself (no registry)
 
 ```bash
 docker build -t geobingo ./geobingo
-docker run --rm -p 10200:10200 -e MAPS_API_KEY=dein_key geobingo
+docker run --rm -p 10200:10200 -e MAPS_API_KEY=your_key geobingo
 ```
 
-Mehr Details (lokale Entwicklung, Konfiguration, Spielablauf) stehen im
-[GeoBingo-README](./geobingo/README.md).
+More details (local development, configuration, how to play) are in the
+[GeoBingo README](./geobingo/README.md).
 
 ---
 
-## Allgemeines
+## General
 
-### Wie die CI funktioniert
+### How CI works
 
-Der Workflow [`.github/workflows/build.yml`](./.github/workflows/build.yml) ist
-für alle Projekte gemeinsam:
+The workflow [`.github/workflows/build.yml`](./.github/workflows/build.yml) is
+shared by every project:
 
-1. Bei jedem Push/PR wird **erkannt, welche Top-Level-Ordner geändert wurden**
-   und ein `Dockerfile` besitzen.
-2. Für jedes geänderte Projekt wird das **Docker-Image gebaut**.
-3. Bei Pushes auf `main` wird das Image in die GitHub Container Registry
-   **veröffentlicht**: `ghcr.io/callmebartis/<projekt>:latest` (und `:<commit-sha>`).
-   Pull Requests bauen nur zur Prüfung — sie veröffentlichen nichts.
+1. On each push/PR it **detects which top-level folders changed** and contain a
+   `Dockerfile`.
+2. For each changed project it **builds the Docker image**.
+3. On pushes to `main` it **publishes** the image to the GitHub Container
+   Registry: `ghcr.io/callmebartis/<project>:latest` (and `:<commit-sha>`).
+   Pull requests only build to verify — they never publish.
 
-Die Erkennung ist vollständig dynamisch — es gibt keine pro Projekt zu pflegende
-Liste.
+The detection is fully dynamic — there is no per-project list to maintain.
 
-### Neues Projekt hinzufügen
+### Adding a new project
 
-1. Neuen Top-Level-Ordner anlegen, z. B. `mein-projekt/`.
-2. Ein `Dockerfile` hinzufügen, das die App baut und startet.
-3. Committen und pushen. Die CI übernimmt es automatisch und veröffentlicht
-   `ghcr.io/callmebartis/mein-projekt`.
+1. Create a new top-level folder, e.g. `my-project/`.
+2. Add a `Dockerfile` that builds and runs the app.
+3. Commit and push. CI picks it up automatically and publishes
+   `ghcr.io/callmebartis/my-project`.
 
-Fertig — keine Workflow-Änderungen nötig.
+That's it — no workflow changes needed.
 
-> **Hinweis (öffentliches Repo):** Secrets gehören in `.env`-Dateien (repo-weit
-> git-ignoriert) — committe niemals echte Keys, jedes Projekt liefert dafür eine
-> `.env.example` als Vorlage. Datenbanken (`*.db`), Build-Artefakte und
-> `node_modules/` sind ebenfalls ignoriert.
+> **Note (public repo):** secrets belong in `.env` files (git-ignored
+> repo-wide) — never commit real keys; each project provides a `.env.example`
+> template instead. Databases (`*.db`), build artifacts, and `node_modules/` are
+> ignored too.
