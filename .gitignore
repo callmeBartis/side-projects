@@ -1,0 +1,76 @@
+# ==========================================================================
+#  side-projects monorepo — root .gitignore
+#  Goal: never leak secrets, credentials, databases or build artifacts.
+#  This is a PUBLIC repo. When in doubt, ignore it.
+# ==========================================================================
+
+# --- Secrets & environment ---
+.env
+.env.*
+!.env.example
+*.local
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+secrets.*
+credentials.*
+service-account*.json
+
+# --- Databases & data dumps ---
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.dump
+*.sql.gz
+/**/data/
+
+# --- Node / JS ---
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+coverage/
+
+# --- Next.js ---
+.next/
+out/
+build/
+.vercel
+
+# --- Go ---
+# Ignore compiled binaries anywhere. Each project that needs a tracked
+# binary name can un-ignore it explicitly.
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# --- TypeScript ---
+*.tsbuildinfo
+next-env.d.ts
+
+# --- OS / Editor ---
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*~

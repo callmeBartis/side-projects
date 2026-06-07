@@ -1,0 +1,29 @@
+# Keep the build context small and secret-free.
+
+# Secrets & local data — must never enter an image layer.
+.env
+.env.*
+!.env.example
+*.db
+*.db-shm
+*.db-wal
+
+# Frontend deps & build outputs (rebuilt inside the image).
+frontend/node_modules
+frontend/.next
+frontend/out
+frontend/.git
+
+# Go build outputs / local binaries.
+geobingo
+geobingo.exe
+*.exe
+*.test
+*.out
+
+# VCS & misc.
+.git
+.gitignore
+*.md
+.DS_Store
+Thumbs.db

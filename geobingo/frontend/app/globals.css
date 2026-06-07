@@ -1,0 +1,393 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   GeoBingo — "Night-Map Instrument" design system
+   A refined dark UI: cool ink base, a single signal-emerald accent,
+   atmospheric aurora + cartographic grid, and instrument-grade typography.
+   ========================================================================== */
+
+@theme {
+  /* Type — set as CSS variables by next/font in layout.tsx */
+  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-instrument), Georgia, "Times New Roman", serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, monospace;
+
+  /* Surfaces (cool ink) */
+  --color-ink: #0a0e13;
+  --color-surface: #0f141b;
+  --color-surface-2: #141b24;
+  --color-elevated: #1a2330;
+  --color-line: #25303d;
+  --color-line-soft: #1a2330;
+
+  /* Text */
+  --color-fg: #e9eef4;
+  --color-muted: #95a3b4;
+  --color-faint: #5c6b7c;
+
+  /* Signal accent (emerald) + states */
+  --color-accent: #3ee2a5;
+  --color-accent-strong: #15c98a;
+  --color-accent-deep: #0b3b2c;
+  --color-danger: #fb7185;
+  --color-danger-deep: #3a1620;
+  --color-warn: #f6b95a;
+
+  /* Atmosphere */
+  --grid-line: rgba(255, 255, 255, 0.028);
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  * {
+    border-color: var(--color-line);
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    background-color: var(--color-ink);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overscroll-behavior: none;
+  }
+
+  /* Visible, on-brand focus ring for keyboard users only */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-accent) 35%, transparent);
+    color: #fff;
+  }
+
+  /* Slim, themed scrollbars */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-line);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-elevated);
+    background-clip: padding-box;
+  }
+}
+
+/* ==========================================================================
+   Atmosphere — used on the non-map screens (login / lobby / results)
+   ========================================================================== */
+
+.scene {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--color-ink);
+  background-image:
+    radial-gradient(
+      55rem 55rem at 12% -12%,
+      color-mix(in oklab, var(--color-accent) 13%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      48rem 48rem at 112% 8%,
+      color-mix(in oklab, #4f86ff 11%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      40rem 40rem at 50% 120%,
+      color-mix(in oklab, var(--color-accent) 7%, transparent),
+      transparent 60%
+    );
+}
+
+/* Cartographic grid, masked to a soft vignette */
+.scene::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 46px 46px;
+  -webkit-mask-image: radial-gradient(circle at 50% 30%, #000 0%, transparent 78%);
+  mask-image: radial-gradient(circle at 50% 30%, #000 0%, transparent 78%);
+}
+
+/* Fine film grain for depth */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ==========================================================================
+   Components
+   ========================================================================== */
+
+/* Frosted, "lit-from-above" panel */
+.panel {
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--color-surface-2) 92%, white 3%), var(--color-surface));
+  border: 1px solid var(--color-line);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
+    0 24px 60px -28px rgba(0, 0, 0, 0.85);
+}
+
+/* Inputs */
+.field {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--color-line);
+  color: var(--color-fg);
+  border-radius: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.95rem;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+.field::placeholder {
+  color: var(--color-faint);
+}
+.field:hover {
+  border-color: color-mix(in oklab, var(--color-line) 60%, var(--color-muted));
+}
+.field:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-accent) 22%, transparent);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  padding: 0.7rem 1.1rem;
+  transition: transform 0.12s ease, background 0.18s ease, border-color 0.18s ease,
+    box-shadow 0.18s ease, color 0.18s ease, opacity 0.18s ease;
+  cursor: pointer;
+  user-select: none;
+}
+.btn:active {
+  transform: translateY(1px) scale(0.99);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  color: #04160f;
+  background: linear-gradient(180deg, var(--color-accent), var(--color-accent-strong));
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.25) inset,
+    0 12px 30px -10px color-mix(in oklab, var(--color-accent) 55%, transparent);
+}
+.btn-primary:hover:not(:disabled) {
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.3) inset,
+    0 16px 38px -10px color-mix(in oklab, var(--color-accent) 70%, transparent);
+}
+
+.btn-ghost {
+  color: var(--color-fg);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--color-line);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: color-mix(in oklab, var(--color-line) 50%, var(--color-muted));
+}
+
+.btn-danger {
+  color: #fff;
+  background: linear-gradient(180deg, var(--color-danger), #e2566a);
+}
+
+/* Term pill in the chip preview */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-line);
+  color: var(--color-muted);
+}
+.chip-dupe {
+  background: var(--color-danger-deep);
+  border-color: color-mix(in oklab, var(--color-danger) 45%, transparent);
+  color: var(--color-danger);
+}
+
+/* ==========================================================================
+   Toasts
+   ========================================================================== */
+
+.toast-viewport {
+  position: fixed;
+  z-index: 200;
+  bottom: 1.1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(92vw, 24rem);
+  pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.8rem;
+  font-size: 0.88rem;
+  color: var(--color-fg);
+  background: color-mix(in oklab, var(--color-elevated) 80%, black);
+  border: 1px solid var(--color-line);
+  box-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  animation: toast-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.toast-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  flex: none;
+  box-shadow: 0 0 0 4px color-mix(in oklab, currentColor 18%, transparent);
+}
+.toast-success {
+  color: var(--color-accent);
+}
+.toast-error {
+  color: var(--color-danger);
+}
+.toast-warn {
+  color: var(--color-warn);
+}
+.toast-info {
+  color: #7fb2ff;
+}
+.toast > span:last-child {
+  color: var(--color-fg);
+}
+
+/* ==========================================================================
+   Motion
+   ========================================================================== */
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes ring-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-accent) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 8px color-mix(in oklab, var(--color-accent) 0%, transparent);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-pop-in {
+  animation: pop-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-sheet-up {
+  animation: sheet-up 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.animate-drawer-in {
+  animation: drawer-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.pulse-ring {
+  animation: ring-pulse 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ==========================================================================
+   Google Maps — blend the default chrome into the dark theme
+   ========================================================================== */
+
+.gm-style,
+.gm-style div {
+  font-family: var(--font-sans) !important;
+}
+.gm-style .gm-style-iw,
+.gm-style .gmnoprint div {
+  border-radius: 8px !important;
+}
+.gm-bundled-control,
+.gmnoprint {
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5));
+}

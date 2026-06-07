@@ -1,0 +1,13 @@
+# Normalize line endings to LF in the repository for everyone.
+# Critical for the CI shell scripts (run on Linux) — CRLF would break them.
+* text=auto eol=lf
+
+# Binary assets — never touch.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.exe binary
