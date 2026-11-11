@@ -50,7 +50,9 @@ ENV PORT=10200
 EXPOSE 10200
 
 # geobingo.db is created in the working directory (/data).
-# Mount a volume here to persist rooms across restarts.
+# Mount a volume here to persist rooms across restarts, or set
+# GEOBINGO_D1_URL/GEOBINGO_D1_TOKEN to keep them in Cloudflare D1 instead
+# (then nothing is written to /data).
 VOLUME ["/data"]
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
