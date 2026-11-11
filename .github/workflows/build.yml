@@ -64,7 +64,7 @@ jobs:
           PROJECTS="$(echo "$CHANGED" \
             | awk -F/ 'NF > 1 { print $1 }' \
             | sort -u \
-            | while read -r d; do [ -f "$d/Dockerfile" ] && echo "$d"; done \
+            | while read -r d; do if [ -f "$d/Dockerfile" ]; then echo "$d"; fi; done \
             | jq -R -s -c 'split("\n") | map(select(length > 0))')"
 
           echo "projects=$PROJECTS" >> "$GITHUB_OUTPUT"
