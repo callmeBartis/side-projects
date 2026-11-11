@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"geobingo/d1"
+	"github.com/Bartis-Dev/libs/go/d1"
 
 	_ "modernc.org/sqlite" // Der CGO-freie SQLite Treiber!
 )

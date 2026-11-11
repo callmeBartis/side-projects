@@ -28,7 +28,6 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY *.go ./
-COPY d1/ ./d1/
 # The embed directive needs frontend/out to exist at compile time.
 COPY --from=frontend /app/frontend/out ./frontend/out
 
@@ -49,11 +48,9 @@ WORKDIR /data
 ENV PORT=10200
 EXPOSE 10200
 
-# geobingo.db is created in the working directory (/data).
-# Mount a volume here to persist rooms across restarts, or set
-# GEOBINGO_D1_URL/GEOBINGO_D1_TOKEN to keep them in Cloudflare D1 instead
-# (then nothing is written to /data).
-VOLUME ["/data"]
+# geobingo.db is created in the working directory (/data). No VOLUME here:
+# in D1 mode (GEOBINGO_D1_URL/GEOBINGO_D1_TOKEN) nothing is written, and an
+# anonymous volume would only leave orphans. Local mode: mount one at /data.
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget -qO- "http://127.0.0.1:${PORT}/api/health" || exit 1
