@@ -87,6 +87,8 @@ cp .env.example .env   # then put your real key in .env (git-ignored)
 | --------------- | ------- | -------------------------------------------- |
 | `MAPS_API_KEY`  | —       | Google Maps JS API key (required).           |
 | `PORT`          | `10200` | Port the HTTP server listens on.             |
+| `GEOBINGO_D1_URL` | — | Optional. data-proxy Worker base (`.../v1/geobingo`); rooms then live in Cloudflare D1 instead of `geobingo.db`. |
+| `GEOBINGO_D1_TOKEN` | — | Worker bearer token, required with the URL. |
 
 Values are read from a `.env` file in the working directory if present,
 otherwise from the process environment (which is what the Docker image uses).
@@ -109,3 +111,7 @@ otherwise from the process environment (which is what the Docker image uses).
   referrer and API in the Google Cloud Console.
 - The SQLite DB lives in `/data` inside the container — mount a volume to keep
   rooms across restarts; it's safe to throw away otherwise.
+- With `GEOBINGO_D1_URL` set nothing is written to disk: rooms, players and
+  finds survive a restart on any host. Live state (open SSE streams, the
+  results voting step, round timers) is still in memory, so run **one**
+  replica; two would not see each other's players.

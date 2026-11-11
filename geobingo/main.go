@@ -14,6 +14,8 @@ import (
 	"sync"
 	"time"
 
+	"geobingo/d1"
+
 	_ "modernc.org/sqlite" // Der CGO-freie SQLite Treiber!
 )
 
@@ -112,23 +114,38 @@ func loadEnv() {
 
 func initDB() {
 	var err error
-	db, err = sql.Open("sqlite", "./geobingo.db")
-	if err != nil {
-		log.Fatal("Konnte Datenbank nicht öffnen:", err)
+	// With GEOBINGO_D1_URL set, rooms live in Cloudflare D1 (via data-proxy),
+	// so the container keeps no state on disk and can restart on any host.
+	if url := os.Getenv("GEOBINGO_D1_URL"); url != "" {
+		token := os.Getenv("GEOBINGO_D1_TOKEN")
+		if token == "" {
+			log.Fatal("GEOBINGO_D1_TOKEN is required when GEOBINGO_D1_URL is set")
+		}
+		db = sql.OpenDB(d1.NewConnector(url, token))
+		if err := db.Ping(); err != nil {
+			log.Fatal("Konnte D1 nicht erreichen:", err)
+		}
+		log.Println("Datenbank: Cloudflare D1")
+	} else {
+		db, err = sql.Open("sqlite", "./geobingo.db")
+		if err != nil {
+			log.Fatal("Konnte Datenbank nicht öffnen:", err)
+		}
+		// Performance Optimierung für SQLite bei gleichzeitigen Zugriffen
+		db.Exec("PRAGMA journal_mode=WAL;")
 	}
 
-	// Performance Optimierung für SQLite bei gleichzeitigen Zugriffen
-	db.Exec("PRAGMA journal_mode=WAL;")
-
-	tables := `
-	CREATE TABLE IF NOT EXISTS rooms (code TEXT PRIMARY KEY, terms TEXT, timeLimit INTEGER, startTime INTEGER, expiresAt INTEGER, finished INTEGER DEFAULT 0, finishedBy TEXT DEFAULT '', started INTEGER DEFAULT 0, creatorId TEXT DEFAULT '');
-	CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, name TEXT);
-	CREATE TABLE IF NOT EXISTS room_users (roomCode TEXT, userId TEXT, PRIMARY KEY(roomCode, userId));
-	CREATE TABLE IF NOT EXISTS found_terms (roomCode TEXT, userId TEXT, term TEXT, lat REAL, lng REAL, PRIMARY KEY(roomCode, userId, term));
-	`
-	_, err = db.Exec(tables)
-	if err != nil {
-		log.Fatal("Konnte Tabellen nicht anlegen:", err)
+	// One statement per Exec: D1 runs only a single statement per call.
+	tables := []string{
+		`CREATE TABLE IF NOT EXISTS rooms (code TEXT PRIMARY KEY, terms TEXT, timeLimit INTEGER, startTime INTEGER, expiresAt INTEGER, finished INTEGER DEFAULT 0, finishedBy TEXT DEFAULT '', started INTEGER DEFAULT 0, creatorId TEXT DEFAULT '')`,
+		`CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, name TEXT)`,
+		`CREATE TABLE IF NOT EXISTS room_users (roomCode TEXT, userId TEXT, PRIMARY KEY(roomCode, userId))`,
+		`CREATE TABLE IF NOT EXISTS found_terms (roomCode TEXT, userId TEXT, term TEXT, lat REAL, lng REAL, PRIMARY KEY(roomCode, userId, term))`,
+	}
+	for _, t := range tables {
+		if _, err := db.Exec(t); err != nil {
+			log.Fatal("Konnte Tabellen nicht anlegen:", err)
+		}
 	}
 	// Migration: Spalten hinzufügen falls sie fehlen (für bestehende DBs)
 	db.Exec("ALTER TABLE rooms ADD COLUMN finished INTEGER DEFAULT 0")

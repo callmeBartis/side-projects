@@ -28,6 +28,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY *.go ./
+COPY d1/ ./d1/
 # The embed directive needs frontend/out to exist at compile time.
 COPY --from=frontend /app/frontend/out ./frontend/out
 

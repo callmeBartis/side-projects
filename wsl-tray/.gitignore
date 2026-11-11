@@ -1,0 +1,5 @@
+bin/
+obj/
+publish/
+config.json
+*.user

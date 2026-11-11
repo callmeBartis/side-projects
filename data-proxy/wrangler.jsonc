@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "data-proxy",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": true,
+  "observability": { "enabled": true },
+
+  // One block per service; its token is a secret: wrangler secret put <SVC>_TOKEN
+  "d1_databases": [
+    { "binding": "OPENAIR_DB", "database_name": "openair", "database_id": "97d66cdb-d0f2-40d4-9330-e03c8d94a333" },
+    { "binding": "GEOBINGO_DB", "database_name": "geobingo", "database_id": "ae28fd7b-2045-4492-a68d-6bb741b1ff01" }
+  ],
+  "r2_buckets": [
+    { "binding": "OPENAIR_FILES", "bucket_name": "openair-uploads" }
+  ]
+}

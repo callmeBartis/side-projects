@@ -74,3 +74,8 @@ desktop.ini
 !.vscode/extensions.json
 *.swp
 *~
+graphify-out/
+
+# --- Cloudflare / wrangler ---
+.wrangler/
+worker-configuration.d.ts

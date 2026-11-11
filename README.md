@@ -3,8 +3,9 @@
 [![Build & Publish](https://github.com/callmeBartis/side-projects/actions/workflows/build.yml/badge.svg)](https://github.com/callmeBartis/side-projects/actions/workflows/build.yml)
 
 A collection of small, self-contained side projects. Each project lives in its
-own folder, ships with its own `Dockerfile`, and is automatically built and
-published as a Docker image by CI.
+own folder. Server apps ship with a `Dockerfile` and are automatically built and
+published as a Docker image by CI; Windows tools are single `.exe` files built
+with `dotnet publish`.
 
 > **Completely free & commercially usable.** Everything in this repository may
 > be used without restriction — privately, commercially, modified, or
@@ -14,6 +15,8 @@ published as a Docker image by CI.
 ## Table of contents
 
 - [GeoBingo](#geobingo) — real-time multiplayer "find it in Street View"
+- [Claude Usage Widget](#claude-usage-widget) — Claude session/weekly usage in the Windows 11 taskbar, with phone alerts
+- [WSL Tray](#wsl-tray) — tray tool for WSL2 usage, limits and distros
 - [General](#general)
   - [How CI works](#how-ci-works)
   - [Adding a new project](#adding-a-new-project)
@@ -110,6 +113,31 @@ docker run --rm -p 10200:10200 -e MAPS_API_KEY=your_key geobingo
 More details (local development, configuration, how to play) are in the
 [GeoBingo README](./geobingo/README.md).
 
+---
+
+## Claude Usage Widget
+
+📁 [`claude-usage-widget/`](./claude-usage-widget) · Windows 11 · C# / WinForms
+
+Shows your Claude plan usage (5-hour session and weekly limit) as a small widget
+inside the Windows 11 taskbar, and pushes alerts to your phone via
+[ntfy](https://ntfy.sh) at configurable thresholds. An iOS shortcut and a
+Scriptable home screen widget can show the same numbers on the phone.
+
+Needs Claude Code installed and logged in. Download the `.exe`, double-click,
+done: it installs itself per user, no admin rights. Details in the
+[README](./claude-usage-widget/README.md).
+
+---
+
+## WSL Tray
+
+📁 [`wsl-tray/`](./wsl-tray) · Windows · C# / WinForms
+
+A tray tool that shows what WSL2 is actually consuming (CPU, RAM, disk per
+distro and Docker container), edits `.wslconfig` limits safely with automatic
+rollback, and starts, stops, installs, clones and exports distros. Details in the
+[README](./wsl-tray/README.md).
 ---
 
 ## General
