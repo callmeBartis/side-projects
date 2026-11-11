@@ -18,7 +18,13 @@ export default {
     try {
       return await handle(req, env);
     } catch (e) {
-      return json({ error: e instanceof Error ? e.message : String(e) }, 400);
+      const msg = e instanceof Error ? e.message : String(e);
+      // Clients retry 5xx but treat 400 as final, so only errors that a retry
+      // cannot fix are 400: bad request JSON and SQL errors (SQLITE_*, type
+      // and column errors). Everything else (D1/R2 overloaded, network lost,
+      // storage timeouts) is 503.
+      const permanent = e instanceof SyntaxError || /SQLITE_|D1_TYPE_ERROR|D1_COLUMN_NOTFOUND/.test(msg);
+      return json({ error: msg }, permanent ? 400 : 503);
     }
   },
 };

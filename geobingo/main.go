@@ -122,9 +122,6 @@ func initDB() {
 			log.Fatal("GEOBINGO_D1_TOKEN is required when GEOBINGO_D1_URL is set")
 		}
 		db = sql.OpenDB(d1.NewConnector(url, token))
-		if err := db.Ping(); err != nil {
-			log.Fatal("Konnte D1 nicht erreichen:", err)
-		}
 		log.Println("Datenbank: Cloudflare D1")
 	} else {
 		db, err = sql.Open("sqlite", "./geobingo.db")
@@ -135,6 +132,32 @@ func initDB() {
 		db.Exec("PRAGMA journal_mode=WAL;")
 	}
 
+	// Wait out a D1/network outage in-process instead of crash-looping;
+	// permanent errors (wrong token, bad SQL) cannot heal, so exit at once.
+	delay := time.Second
+	for attempt := 1; ; attempt++ {
+		err = createTables()
+		if err == nil {
+			break
+		}
+		if !d1.IsTransient(err) {
+			log.Fatal("Konnte Datenbank nicht vorbereiten (kein Retry): ", err)
+		}
+		log.Printf("Datenbank nicht erreichbar (Versuch %d), neuer Versuch in %s: %v", attempt, delay, err)
+		time.Sleep(delay)
+		delay = min(delay*2, 30*time.Second)
+	}
+	// Migration: Spalten hinzufügen falls sie fehlen (für bestehende DBs)
+	db.Exec("ALTER TABLE rooms ADD COLUMN finished INTEGER DEFAULT 0")
+	db.Exec("ALTER TABLE rooms ADD COLUMN finishedBy TEXT DEFAULT ''")
+	db.Exec("ALTER TABLE rooms ADD COLUMN started INTEGER DEFAULT 0")
+	db.Exec("ALTER TABLE rooms ADD COLUMN creatorId TEXT DEFAULT ''")
+}
+
+func createTables() error {
+	if err := db.Ping(); err != nil {
+		return fmt.Errorf("ping: %w", err)
+	}
 	// One statement per Exec: D1 runs only a single statement per call.
 	tables := []string{
 		`CREATE TABLE IF NOT EXISTS rooms (code TEXT PRIMARY KEY, terms TEXT, timeLimit INTEGER, startTime INTEGER, expiresAt INTEGER, finished INTEGER DEFAULT 0, finishedBy TEXT DEFAULT '', started INTEGER DEFAULT 0, creatorId TEXT DEFAULT '')`,
@@ -144,14 +167,10 @@ func initDB() {
 	}
 	for _, t := range tables {
 		if _, err := db.Exec(t); err != nil {
-			log.Fatal("Konnte Tabellen nicht anlegen:", err)
+			return fmt.Errorf("Konnte Tabellen nicht anlegen: %w", err)
 		}
 	}
-	// Migration: Spalten hinzufügen falls sie fehlen (für bestehende DBs)
-	db.Exec("ALTER TABLE rooms ADD COLUMN finished INTEGER DEFAULT 0")
-	db.Exec("ALTER TABLE rooms ADD COLUMN finishedBy TEXT DEFAULT ''")
-	db.Exec("ALTER TABLE rooms ADD COLUMN started INTEGER DEFAULT 0")
-	db.Exec("ALTER TABLE rooms ADD COLUMN creatorId TEXT DEFAULT ''")
+	return nil
 }
 
 // Löscht regelmäßig Räume, die abgelaufen sind

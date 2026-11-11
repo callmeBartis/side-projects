@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -32,7 +33,7 @@ func NewConnector(url, token string) *Connector {
 	return &Connector{
 		URL:    strings.TrimRight(url, "/"),
 		Token:  token,
-		Client: &http.Client{Timeout: 30 * time.Second},
+		Client: &http.Client{Timeout: 10 * time.Second},
 	}
 }
 
@@ -55,11 +56,80 @@ type batchResult struct {
 	LastRowID int64 `json:"lastRowId"`
 }
 
+// HTTPError is a non-200 answer from the Worker.
+type HTTPError struct {
+	Op     string
+	Status int
+	Msg    string
+}
+
+func (e *HTTPError) Error() string {
+	return fmt.Sprintf("d1: %s: HTTP %d: %s", e.Op, e.Status, e.Msg)
+}
+
+// TransientStatus reports whether an HTTP status from the Worker is worth
+// retrying. Other 4xx (bad SQL, wrong token) fail the same way every time.
+func TransientStatus(code int) bool {
+	switch code {
+	case http.StatusTooManyRequests, http.StatusInternalServerError, http.StatusBadGateway,
+		http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+		return true
+	}
+	return false
+}
+
+// IsTransient reports whether err is a network failure or a retryable Worker
+// status, i.e. whether trying again later can succeed.
+func IsTransient(err error) bool {
+	var he *HTTPError
+	if errors.As(err, &he) {
+		return TransientStatus(he.Status)
+	}
+	var oe *net.OpError
+	var de *net.DNSError
+	var ne net.Error
+	return errors.As(err, &oe) || errors.As(err, &de) ||
+		(errors.As(err, &ne) && ne.Timeout()) ||
+		errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF)
+}
+
+// neverSent reports whether the request failed before a connection existed,
+// so the Worker cannot have seen it.
+func neverSent(err error) bool {
+	var oe *net.OpError
+	var de *net.DNSError
+	return errors.As(err, &de) || errors.As(err, &oe) && oe.Op == "dial"
+}
+
+// retryDelays are the waits between attempts; tests shorten them.
+var retryDelays = []time.Duration{200 * time.Millisecond, 800 * time.Millisecond}
+
 func (c *Connector) post(ctx context.Context, op string, body, out any) error {
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return fmt.Errorf("d1: encode request: %w", err)
 	}
+	for attempt := 0; ; attempt++ {
+		err = c.postOnce(ctx, op, buf, out)
+		// A batch is retried only if it never left this process: after a
+		// timeout, 5xx or reset the Worker may already have committed it,
+		// and replaying it would apply the write twice (duplicate INSERT).
+		retry := IsTransient(err)
+		if op == "batch" {
+			retry = neverSent(err)
+		}
+		if err == nil || !retry || attempt >= len(retryDelays) || ctx.Err() != nil {
+			return err
+		}
+		select {
+		case <-ctx.Done():
+			return err
+		case <-time.After(retryDelays[attempt]):
+		}
+	}
+}
+
+func (c *Connector) postOnce(ctx context.Context, op string, buf []byte, out any) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.URL+"/"+op, bytes.NewReader(buf))
 	if err != nil {
 		return fmt.Errorf("d1: build request: %w", err)
@@ -79,7 +149,7 @@ func (c *Connector) post(ctx context.Context, op string, body, out any) error {
 		if json.Unmarshal(raw, &e) != nil || e.Error == "" {
 			e.Error = strings.TrimSpace(string(raw))
 		}
-		return fmt.Errorf("d1: %s: HTTP %d: %s", op, resp.StatusCode, e.Error)
+		return &HTTPError{Op: op, Status: resp.StatusCode, Msg: e.Error}
 	}
 	dec := json.NewDecoder(resp.Body)
 	dec.UseNumber()
